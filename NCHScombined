@@ -1,0 +1,24 @@
+packs <- c("tidyverse", "jsonlite")
+lapply(packs, require, character.only=TRUE)
+CauseDeath <- fromJSON("NCHSCauseDeath.json") %>% as_tibble(
+  options(tibble.print_max=20, tibble.print_min=10, tibble.width=NULL))
+death.data <- CauseDeath$data
+# Actual data is only 14 columns-- the names are in the meta data as lists in lists
+# Meta is a list with 10,000 obs of "view"
+# First obs (at least) has a variable called "columns", has a variable called names
+# Maybe this is typical of json data, but it's definitely weird
+death.meta.names <- CauseDeath$meta[[1]]$columns$name %>% as.vector()
+colnames(death.data) <- death.meta.names
+death.data <- death.data %>% as_tibble() %>% 
+  select(position, Year, `Cause Name`, State, Deaths, `Age-adjusted Death Rate`)
+death.data
+# Time for the second dataset
+LifeDeath <- fromJSON("NCHSLifeDeath.json") %>% as_tibble(
+  options(tibble.print_max=20, tibble.print_min=10, tibble.width=NULL))
+life.data <- LifeDeath$data
+# Can't turn 'columns' into a tibble-- there's format and cached content
+life.meta.names <- LifeDeath$meta[[1]]$columns$name %>% as.vector()
+colnames(life.data) <-  life.meta.names
+life.data <- life.data %>% as_tibble() %>%
+  select(position, Year, Race, Sex, `Average Life Expectancy (Years)`, `Age-adjusted Death Rate`)
+life.data

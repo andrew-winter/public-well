@@ -1,0 +1,17 @@
+ChicagoBudget <- fromJSON("Chicago2017Budget.json")
+budget.data <- ChicagoBudget$data
+budget.col.names <- ChicagoBudget$meta[[1]]$columns[[2]] %>% as.vector
+colnames(budget.data) <- budget.col.names
+budget.data <- budget.data %>% as_tibble() %>% select(-sid, -id, -position,
+  -created_at, -created_meta, -updated_at, -updated_meta, -meta)
+budget.data %>% str()
+simple.budget <- budget.data %>% 
+  transmute(department = `DEPARTMENT DESCRIPTION`,
+    organization = `ORGANIZATION DESCRIPTION`, division = `DIVISION DESCRIPTION`,
+    section = `SECTION DESCRIPTION`, title = `TITLE DESCRIPTION`,
+    budgeted.unit = as.factor(`BUDGETED UNIT`), 
+    pay.rate = as.numeric(`BUDGETED PAY RATE`),
+    total.amt = as.numeric(`TOTAL BUDGETED AMOUNT`))
+simple.budget %>% str()
+simple.budget %>% group_by(department) %>%
+  summarize(avg = mean(pay.rate), n = n()) %>% arrange(desc(avg))

@@ -10,7 +10,7 @@ death.data <- CauseDeath$data
 death.meta.names <- CauseDeath$meta[[1]]$columns$name %>% as.vector()
 colnames(death.data) <- death.meta.names
 death.data <- death.data %>% as_tibble() %>% 
-  select(position, Year, `Cause Name`, State, Deaths, `Age-adjusted Death Rate`)
+  select(Year, `Cause Name`, State, Deaths, `Age-adjusted Death Rate`)
 death.data
 # Time for the second dataset
 LifeDeath <- fromJSON("NCHSLifeDeath.json") %>% as_tibble(
@@ -20,5 +20,5 @@ life.data <- LifeDeath$data
 life.meta.names <- LifeDeath$meta[[1]]$columns$name %>% as.vector()
 colnames(life.data) <-  life.meta.names
 life.data <- life.data %>% as_tibble() %>%
-  select(position, Year, Race, Sex, `Average Life Expectancy (Years)`, `Age-adjusted Death Rate`)
+  select(Year, Race, Sex, `Average Life Expectancy (Years)`, `Age-adjusted Death Rate`)
 life.data

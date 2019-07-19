@@ -1,0 +1,32 @@
+library(httr)
+options(stringsAsFactors = FALSE)
+key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
+base.url <- "https://api.propublica.org/congress/v1/"
+suffix.url <- "115/house/members.json"
+# 102-114 for House, 80-114 for Senate -----------------------------------------
+url <- paste0(base.url, suffix.url)
+result.full <- GET(url, add_headers(`X-API-Key` = key)) %>% 
+  content('parsed')
+house <- result.full$results[[1]] %>% as_tibble()
+house
+members.list <- house$members
+house.columns <- house$members[[1]] %>% names()
+# members is a list of lists-- there's 448 records of 44 records each
+members <- sapply(members.list, as.character) %>% sapply(t)
+members.matrix <- plyr::rbind.fill.matrix(members)
+colnames(members.matrix) <- house.columns
+members.tbl <- members.matrix %>% as_tibble()
+
+library(httr)
+options(stringsAsFactors = FALSE)
+key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
+base.url <- "https://api.propublica.org/congress/v1/"
+num.senate <- c(80:114)
+senate.urls <- paste0(base.url,num.senate,"/senate/members.json")
+senate.url <- paste0(base.url,114,"/senate/members.json")
+result.full <- GET(senate.url, add_headers(`X-API-Key` = key)) %>% 
+  content('parsed')
+senate <- result.full$results[[1]] %>% as_tibble
+senators <- senate$members %>% sapply(as.character) %>% t() %>% as_tibble()
+colnames(senators) <- senate$members[[1]] %>% names()
+senators

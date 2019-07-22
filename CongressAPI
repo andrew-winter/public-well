@@ -5,6 +5,43 @@ baseURL <- "https://api.propublica.org/congress/v1/"
 senateURL <- paste0(baseURL,116,"/senate/members.json")
 
 
+# Let's get a looooot of Senate info at once-----------------------------------------
+all.senateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
+allSenates <- list()
+for (i in 1:37) {
+  allSenates[[i]] <- GET(all.senateURLs[[i]], add_headers(`X-API-Key` = key)) %>% 
+    content('parsed')
+}
+SenateTibble <- list()
+for (i in 1:37) {
+  SenateTibble[[i]] <- allSenates[[i]]$results[[1]] %>% as_tibble()
+}
+
+# Up until this step, all the Senates appear to be the same
+# SenateTibble is a list of 37 tibbles, each with a members list 
+# The next sapply, though, makes 37 okay and 36 not okay
+
+
+
+rbind(SenateTibble[[36]]$members[[1]], SenateTibble[[36]]$members[[2]]) %>% 
+  as_tibble()
+rbind(SenateTibble[[37]]$members[[1]], SenateTibble[[37]]$members[[2]]) %>%
+  as_tibble()
+
+sapply(SenateTibble[[36]]$members, rbind) %>% as_tibble() %>% 
+  mutate_all(as.character)
+
+
+rbind(SenateTibble[[1]]$members[[1]], SenateTibble[[1]]$members[[2]])
+sapply(SenateTibble[[37]]$members, rbind) %>% t() %>% as_tibble %>%
+  mutate_all(as.character)
+
+
+
+
+
+# Accomplished earlier, don't know if this is relevant anymore
+
 result.full <- GET(senateURL, add_headers(`X-API-Key` = key)) %>% 
   content('parsed')
 senate <- result.full$results[[1]] %>% as_tibble
@@ -22,18 +59,18 @@ testtbl %>% select(id, last_name, party, state,
   total_votes, missed_votes, missed_votes_pct, votes_with_party_pct) %>% 
   arrange(desc(missed_votes_pct), votes_with_party_pct) %>%
   print(n = 100)
-   
 
-# Let's get a looooot of Senate info at once-----------------------------------------
-all.senateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
-allSenates <- list()
-for (i in 1:37) {
-  allSenates[[i]] <- GET(all.senateURLs[[i]], add_headers(`X-API-Key` = key)) %>% 
-    content('parsed')
-}
+
 # One of 37 Senates, just an example of Senate tibble
 allSenates[[37]]$results[[1]] %>% as_tibble()
 # Focused down version: members tibble
 sapply(allSenates[[37]]$results[[1]]$members, rbind) %>% t() %>% as_tibble() %>%
   mutate_all(as.character)
 # Next step would be another for loop, but we'll see---------------------------------
+
+
+testllist <- list()
+for (i in 1:37) {
+  testlist[[i]] <- sapply(allSenates[[i]]$results[[1]]$members, rbind) %>% t() %>% 
+  as_tibble() %>% mutate_all(as.character)
+}

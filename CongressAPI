@@ -3,8 +3,8 @@ options(stringsAsFactors = FALSE)
 key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
 baseURL <- "https://api.propublica.org/congress/v1/"
 senateURL <- paste0(baseURL,116,"/senate/members.json")
-all.senateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
-senateURLslist <- all.senateURLs %>% as.list()
+
+
 result.full <- GET(senateURL, add_headers(`X-API-Key` = key)) %>% 
   content('parsed')
 senate <- result.full$results[[1]] %>% as_tibble
@@ -22,3 +22,18 @@ testtbl %>% select(id, last_name, party, state,
   total_votes, missed_votes, missed_votes_pct, votes_with_party_pct) %>% 
   arrange(desc(missed_votes_pct), votes_with_party_pct) %>%
   print(n = 100)
+   
+
+# Let's get a looooot of Senate info at once-----------------------------------------
+all.senateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
+allSenates <- list()
+for (i in 1:37) {
+  allSenates[[i]] <- GET(all.senateURLs[[i]], add_headers(`X-API-Key` = key)) %>% 
+    content('parsed')
+}
+# One of 37 Senates, just an example of Senate tibble
+allSenates[[37]]$results[[1]] %>% as_tibble()
+# Focused down version: members tibble
+sapply(allSenates[[37]]$results[[1]]$members, rbind) %>% t() %>% as_tibble() %>%
+  mutate_all(as.character)
+# Next step would be another for loop, but we'll see---------------------------------

@@ -28,8 +28,6 @@ SenatorTibble <- lapply(SenatorTibble, as_tibble)
 for (i in works) {
   SenatorTibble[[i]] <- SenatorTibble[[i]] %>% mutate_all(as.character)
 }
-SenatorTibble
-
 
 dwork <- c(24, 26:28, 32:34, 36)
 for (j in dwork) {
@@ -43,16 +41,39 @@ for (j in dwork) {
       SenateTibble[[j]][[5]][[i]] <- SenateTibble[[j]][[5]][[i]]
     }
   }
-SenatorTibble[[j]] <- sapply(SenateTibble[[j]]$members, rbind) %>% t()
-namesList[[j]] <- names(SenateTibble[[j]]$members[[1]])
-colnames(SenatorTibble[[j]]) <- namesList[[j]]
+  SenatorTibble[[j]] <- sapply(SenateTibble[[j]]$members, rbind) %>% t()
+  namesList[[j]] <- names(SenateTibble[[j]]$members[[1]])
+  colnames(SenatorTibble[[j]]) <- namesList[[j]]
 }
+
 # Eventually, can condense the rbind-transpose loop, name loop-----------------
 SenatorTibble <- lapply(SenatorTibble, as_tibble)
 for (k in dwork) {
   SenatorTibble[[k]] <- SenatorTibble[[k]] %>% mutate_all(as.character)
 }
 
+numerize <- function(x) {
+  if (length(names(x)) > 41) {
+    x %>% mutate(
+         total_votes = as.numeric(total_votes),
+        missed_votes = as.numeric(missed_votes),
+       total_present = as.numeric(total_present),
+       next_election = as.numeric(next_election),
+    missed_votes_pct = as.numeric(missed_votes_pct),
+votes_with_party_pct = as.numeric(votes_with_party_pct))
+  } else {
+x}
+}
+SenatorTibble <- lapply(SenatorTibble, numerize)
 
-# Next step is to mutate proper columns properly
-# Then add the missing Senates (next_election for some Senators, not others
+
+# Add the missing senates
+# Test below
+
+asdf <- c(27:37)
+pretest <- list()
+for (i in asdf) {
+  pretest[[i - 26]] <- SenatorTibble[[i]]}
+test <- pretest %>% reduce(inner_join, "id") %>% 
+  select(id, last_name, party, state, contains("votes_with_party"))
+test

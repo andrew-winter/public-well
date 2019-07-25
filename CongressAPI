@@ -2,75 +2,57 @@ library(httr)
 options(stringsAsFactors = FALSE)
 key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
 baseURL <- "https://api.propublica.org/congress/v1/"
-senateURL <- paste0(baseURL,116,"/senate/members.json")
-
-
-# Let's get a looooot of Senate info at once-----------------------------------------
-all.senateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
+allsenateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
+grabSenate <- function(x) {
+  content(GET(x, add_headers(`X-API-Key` = key)), 'parsed')}
 allSenates <- list()
-for (i in 1:37) {
-  allSenates[[i]] <- GET(all.senateURLs[[i]], add_headers(`X-API-Key` = key)) %>% 
-    content('parsed')
-}
+allSenates <- lapply(allsenateURLs, grabSenate)
+
+# Haven't figured out how to change this to 'lapply()'
+# Problem is that the iteration is before the end of the path
 SenateTibble <- list()
 for (i in 1:37) {
   SenateTibble[[i]] <- allSenates[[i]]$results[[1]] %>% as_tibble()
 }
 
-# Up until this step, all the Senates appear to be the same
-# SenateTibble is a list of 37 tibbles, each with a members list 
-# The next sapply, though, makes 37 okay and 36 not okay
-
-
-
-rbind(SenateTibble[[36]]$members[[1]], SenateTibble[[36]]$members[[2]]) %>% 
-  as_tibble()
-rbind(SenateTibble[[37]]$members[[1]], SenateTibble[[37]]$members[[2]]) %>%
-  as_tibble()
-
-sapply(SenateTibble[[36]]$members, rbind) %>% as_tibble() %>% 
-  mutate_all(as.character)
-
-
-rbind(SenateTibble[[1]]$members[[1]], SenateTibble[[1]]$members[[2]])
-sapply(SenateTibble[[37]]$members, rbind) %>% t() %>% as_tibble %>%
-  mutate_all(as.character)
-
-
-
-
-
-# Accomplished earlier, don't know if this is relevant anymore
-
-result.full <- GET(senateURL, add_headers(`X-API-Key` = key)) %>% 
-  content('parsed')
-senate <- result.full$results[[1]] %>% as_tibble
-testtbl <- sapply(senate$members, rbind) %>% t() %>% as_tibble() %>%
-  mutate_all(as.character)
-colnames(testtbl) <- senate$members[[1]] %>% names()
-testtbl <- testtbl %>% mutate(total_votes = as.double(total_votes),
-  missed_votes = as.double(missed_votes),
-  total_present = as.double(total_present), 
-  missed_votes_pct = as.double(missed_votes_pct),
-  votes_with_party_pct = as.double(votes_with_party_pct)
-)
-# Sample "test tibble" below
-testtbl %>% select(id, last_name, party, state, 
-  total_votes, missed_votes, missed_votes_pct, votes_with_party_pct) %>% 
-  arrange(desc(missed_votes_pct), votes_with_party_pct) %>%
-  print(n = 100)
-
-
-# One of 37 Senates, just an example of Senate tibble
-allSenates[[37]]$results[[1]] %>% as_tibble()
-# Focused down version: members tibble
-sapply(allSenates[[37]]$results[[1]]$members, rbind) %>% t() %>% as_tibble() %>%
-  mutate_all(as.character)
-# Next step would be another for loop, but we'll see---------------------------------
-
-
-testllist <- list()
-for (i in 1:37) {
-  testlist[[i]] <- sapply(allSenates[[i]]$results[[1]]$members, rbind) %>% t() %>% 
-  as_tibble() %>% mutate_all(as.character)
+# Eventually, can condense the rbind-transpose loop, name loop-----------------
+SenatorTibble <- list()
+namesList <- list()
+works <- c(1:21, 25, 29:31, 35, 37)
+for (i in works) {
+  SenatorTibble[[i]] <- sapply(SenateTibble[[i]]$members, rbind) %>% t()
+    namesList[[i]] <- names(SenateTibble[[i]]$members[[1]])
+      colnames(SenatorTibble[[i]]) <- namesList[[i]]
 }
+SenatorTibble <- lapply(SenatorTibble, as_tibble)
+for (i in works) {
+  SenatorTibble[[i]] <- SenatorTibble[[i]] %>% mutate_all(as.character)
+}
+SenatorTibble
+
+
+dwork <- c(24, 26:28, 32:34, 36)
+for (j in dwork) {
+  for (i in 1:length(SenateTibble[[j]][[5]])) {
+    if (length(SenateTibble[[j]][[5]][[i]]) != 
+        length(SenateTibble[[j]][[5]][[1]])) {
+      SenateTibble[[j]][[5]][[i]] <- append(SenateTibble[[j]][[5]][[i]], "added",
+      after = 29)
+      names(SenateTibble[[j]][[5]][[i]]) <- names(SenateTibble[[j]][[5]][[1]])
+    } else {
+      SenateTibble[[j]][[5]][[i]] <- SenateTibble[[j]][[5]][[i]]
+    }
+  }
+SenatorTibble[[j]] <- sapply(SenateTibble[[j]]$members, rbind) %>% t()
+namesList[[j]] <- names(SenateTibble[[j]]$members[[1]])
+colnames(SenatorTibble[[j]]) <- namesList[[j]]
+}
+# Eventually, can condense the rbind-transpose loop, name loop-----------------
+SenatorTibble <- lapply(SenatorTibble, as_tibble)
+for (k in dwork) {
+  SenatorTibble[[k]] <- SenatorTibble[[k]] %>% mutate_all(as.character)
+}
+
+
+# Next step is to mutate proper columns properly
+# Then add the missing Senates (next_election for some Senators, not others

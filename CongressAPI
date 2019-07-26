@@ -1,6 +1,3 @@
-library(httr)
-options(stringsAsFactors = FALSE)
-key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
 baseURL <- "https://api.propublica.org/congress/v1/"
 allsenateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
 grabSenate <- function(x) {
@@ -70,19 +67,43 @@ numerize <- function(x) {
     missed_votes_pct = as.numeric(missed_votes_pct),
 votes_with_party_pct = as.numeric(votes_with_party_pct))
   } else {
-x}
+    x %>% mutate(total_votes = as.numeric(total_votes),
+                missed_votes = as.numeric(missed_votes),
+               total_present = as.numeric(total_present))
+  }
 }
-SenatorTibble <- lapply(SenatorTibble, numerize)
+numerize_again <- function(x) {
+  if (length(names(x)) == 43) {
+    x %>% mutate(
+      missed_votes_pct = as.numeric(missed_votes_pct),
+  votes_with_party_pct = as.numeric(votes_with_party_pct))
+  } else { x }
+}
 
+SenatorTibble <- suppressWarnings(lapply(SenatorTibble, numerize))
+SenatorTibble <- lapply(SenatorTibble, numerize_again)
 
+allSenators <- bind_rows(SenatorTibble, .id = "senate") %>% 
+  mutate(senate = as.integer(senate))
+dupeSenators <- allSenators[duplicated(allSenators$id),]
 
+# Group missed votes by next_election
 
 reducer <- function(x) {
   x %>% select(id, last_name, gender, party, state, 
     next_election, contains("_votes"), votes_with_party_pct)}
-reducer2 <- function(x) {
+senate_reducer <- function(x) {
   x %>% select(id, senate, last_name, gender, party, state, 
     next_election, contains("_votes"), votes_with_party_pct)}
+
+
+# sen is a test tibble
+sen <- senate_reducer(allSenators)
+sen %>% ggplot()+
+  geom_quantile(mapping = aes(next_election, missed_votes))
+sen %>% group_by(party, state) %>% 
+  summarize(mean = mean(missed_votes, na.rm=TRUE)) %>% arrange(desc(mean))
+
 
 
 last10 <- c(28:37)

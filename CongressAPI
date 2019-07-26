@@ -15,10 +15,16 @@ for (i in 1:37) {
   SenateTibble[[i]] <- allSenates[[i]]$results[[1]] %>% as_tibble()
 }
 
+# Easiest way to remove 'next_election' from these three
+SenateTibble[[22]][[5]][[16]][30] <- NULL
+SenateTibble[[23]][[5]][[16]][30] <- NULL
+SenateTibble[[23]][[5]][[35]][30] <- NULL
+
+
 # Eventually, can condense the rbind-transpose loop, name loop-----------------
 SenatorTibble <- list()
 namesList <- list()
-works <- c(1:21, 25, 29:31, 35, 37)
+works <- c(1:23, 25, 29:31, 35, 37)
 for (i in works) {
   SenatorTibble[[i]] <- sapply(SenateTibble[[i]]$members, rbind) %>% t()
     namesList[[i]] <- names(SenateTibble[[i]]$members[[1]])
@@ -28,6 +34,7 @@ SenatorTibble <- lapply(SenatorTibble, as_tibble)
 for (i in works) {
   SenatorTibble[[i]] <- SenatorTibble[[i]] %>% mutate_all(as.character)
 }
+
 
 dwork <- c(24, 26:28, 32:34, 36)
 for (j in dwork) {
@@ -52,8 +59,9 @@ for (k in dwork) {
   SenatorTibble[[k]] <- SenatorTibble[[k]] %>% mutate_all(as.character)
 }
 
+
 numerize <- function(x) {
-  if (length(names(x)) > 41) {
+  if (length(names(x)) > 43) {
     x %>% mutate(
          total_votes = as.numeric(total_votes),
         missed_votes = as.numeric(missed_votes),
@@ -67,13 +75,23 @@ x}
 SenatorTibble <- lapply(SenatorTibble, numerize)
 
 
-# Add the missing senates
-# Test below
 
-asdf <- c(27:37)
-pretest <- list()
-for (i in asdf) {
-  pretest[[i - 26]] <- SenatorTibble[[i]]}
-test <- pretest %>% reduce(inner_join, "id") %>% 
-  select(id, last_name, party, state, contains("votes_with_party"))
-test
+
+reducer <- function(x) {
+  x %>% select(id, last_name, gender, party, state, 
+    next_election, contains("_votes"), votes_with_party_pct)}
+reducer2 <- function(x) {
+  x %>% select(id, senate, last_name, gender, party, state, 
+    next_election, contains("_votes"), votes_with_party_pct)}
+
+
+last10 <- c(28:37)
+agglist <- list()
+for (i in last10) {
+  agglist[[i - 27]] <- SenatorTibble[[i]]}
+
+
+agg <- bind_rows(agglist, .id = "senate") %>% 
+  mutate(senate = as.integer(senate)) %>% arrange(id, senate)
+agg <- agg[duplicated(agg$id),]
+agg <- agg %>% reducer2()

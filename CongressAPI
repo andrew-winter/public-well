@@ -1,23 +1,24 @@
+library(tidyverse)
+library(httr)
+options(stringsAsFactors = FALSE)
+key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
 baseURL <- "https://api.propublica.org/congress/v1/"
 allsenateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
 grabSenate <- function(x) {
   content(GET(x, add_headers(`X-API-Key` = key)), 'parsed')}
 allSenates <- list()
 allSenates <- lapply(allsenateURLs, grabSenate)
-
 # Haven't figured out how to change this to 'lapply()'
 # Problem is that the iteration is before the end of the path
 SenateTibble <- list()
 for (i in 1:37) {
   SenateTibble[[i]] <- allSenates[[i]]$results[[1]] %>% as_tibble()
 }
-
 # Easiest way to remove 'next_election' from these three
+# Forgot why I removed next_election, though
 SenateTibble[[22]][[5]][[16]][30] <- NULL
 SenateTibble[[23]][[5]][[16]][30] <- NULL
 SenateTibble[[23]][[5]][[35]][30] <- NULL
-
-
 # Eventually, can condense the rbind-transpose loop, name loop-----------------
 SenatorTibble <- list()
 namesList <- list()
@@ -31,8 +32,6 @@ SenatorTibble <- lapply(SenatorTibble, as_tibble)
 for (i in works) {
   SenatorTibble[[i]] <- SenatorTibble[[i]] %>% mutate_all(as.character)
 }
-
-
 dwork <- c(24, 26:28, 32:34, 36)
 for (j in dwork) {
   for (i in 1:length(SenateTibble[[j]][[5]])) {
@@ -49,14 +48,11 @@ for (j in dwork) {
   namesList[[j]] <- names(SenateTibble[[j]]$members[[1]])
   colnames(SenatorTibble[[j]]) <- namesList[[j]]
 }
-
 # Eventually, can condense the rbind-transpose loop, name loop-----------------
 SenatorTibble <- lapply(SenatorTibble, as_tibble)
 for (k in dwork) {
   SenatorTibble[[k]] <- SenatorTibble[[k]] %>% mutate_all(as.character)
 }
-
-
 numerize <- function(x) {
   if (length(names(x)) > 43) {
     x %>% mutate(
@@ -79,15 +75,17 @@ numerize_again <- function(x) {
   votes_with_party_pct = as.numeric(votes_with_party_pct))
   } else { x }
 }
-
+# Little bit worried to have 'suppressWarnings()'------------------------------
+# Maaaaybe rewrite 'numerize()' so there's fewer warnings----------------------
 SenatorTibble <- suppressWarnings(lapply(SenatorTibble, numerize))
 SenatorTibble <- lapply(SenatorTibble, numerize_again)
-
 allSenators <- bind_rows(SenatorTibble, .id = "senate") %>% 
   mutate(senate = as.integer(senate))
-dupeSenators <- allSenators[duplicated(allSenators$id),]
+dupeSenators <- allSenators %>% add_count(id) %>% filter(n > 1)
+# add_count is 'shorthand for group_by and add_tally'
 
-# Group missed votes by next_election
+
+graphSenators <- dupeSenators %>% filter(senate %in% 22:37)
 
 reducer <- function(x) {
   x %>% select(id, last_name, gender, party, state, 
@@ -97,22 +95,7 @@ senate_reducer <- function(x) {
     next_election, contains("_votes"), votes_with_party_pct)}
 
 
-# sen is a test tibble
-sen <- senate_reducer(allSenators)
-sen %>% ggplot()+
-  geom_quantile(mapping = aes(next_election, missed_votes))
-sen %>% group_by(party, state) %>% 
-  summarize(mean = mean(missed_votes, na.rm=TRUE)) %>% arrange(desc(mean))
-
-
-
-last10 <- c(28:37)
-agglist <- list()
-for (i in last10) {
-  agglist[[i - 27]] <- SenatorTibble[[i]]}
-
-
-agg <- bind_rows(agglist, .id = "senate") %>% 
-  mutate(senate = as.integer(senate)) %>% arrange(id, senate)
-agg <- agg[duplicated(agg$id),]
-agg <- agg %>% reducer2()
+To-Do for Senate analysis
+# Learn s'more ggplot2 and show some meaningful formats/visualizations
+# Group missed votes by next_election
+# Learn %in% operator, 'group_by_at()' and similar

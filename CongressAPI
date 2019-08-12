@@ -3,99 +3,29 @@ library(httr)
 options(stringsAsFactors = FALSE)
 key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
 baseURL <- "https://api.propublica.org/congress/v1/"
-allsenateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
-grabSenate <- function(x) {
+grabChamber <- function(x) {
   content(GET(x, add_headers(`X-API-Key` = key)), 'parsed')}
-allSenates <- list()
-allSenates <- lapply(allsenateURLs, grabSenate)
-# Haven't figured out how to change this to 'lapply()'
-# Problem is that the iteration is before the end of the path
-SenateTibble <- list()
-for (i in 1:37) {
-  SenateTibble[[i]] <- allSenates[[i]]$results[[1]] %>% as_tibble()
-}
-# Easiest way to remove 'next_election' from these three
-# Forgot why I removed next_election, though
-SenateTibble[[22]][[5]][[16]][30] <- NULL
-SenateTibble[[23]][[5]][[16]][30] <- NULL
-SenateTibble[[23]][[5]][[35]][30] <- NULL
-# Eventually, can condense the rbind-transpose loop, name loop-----------------
-SenatorTibble <- list()
-namesList <- list()
-works <- c(1:23, 25, 29:31, 35, 37)
-for (i in works) {
-  SenatorTibble[[i]] <- sapply(SenateTibble[[i]]$members, rbind) %>% t()
-    namesList[[i]] <- names(SenateTibble[[i]]$members[[1]])
-      colnames(SenatorTibble[[i]]) <- namesList[[i]]
-}
-SenatorTibble <- lapply(SenatorTibble, as_tibble)
-for (i in works) {
-  SenatorTibble[[i]] <- SenatorTibble[[i]] %>% mutate_all(as.character)
-}
-dwork <- c(24, 26:28, 32:34, 36)
-for (j in dwork) {
-  for (i in 1:length(SenateTibble[[j]][[5]])) {
-    if (length(SenateTibble[[j]][[5]][[i]]) != 
-        length(SenateTibble[[j]][[5]][[1]])) {
-      SenateTibble[[j]][[5]][[i]] <- append(SenateTibble[[j]][[5]][[i]], "added",
-      after = 29)
-      names(SenateTibble[[j]][[5]][[i]]) <- names(SenateTibble[[j]][[5]][[1]])
-    } else {
-      SenateTibble[[j]][[5]][[i]] <- SenateTibble[[j]][[5]][[i]]
-    }
-  }
-  SenatorTibble[[j]] <- sapply(SenateTibble[[j]]$members, rbind) %>% t()
-  namesList[[j]] <- names(SenateTibble[[j]]$members[[1]])
-  colnames(SenatorTibble[[j]]) <- namesList[[j]]
-}
-# Eventually, can condense the rbind-transpose loop, name loop-----------------
-SenatorTibble <- lapply(SenatorTibble, as_tibble)
-for (k in dwork) {
-  SenatorTibble[[k]] <- SenatorTibble[[k]] %>% mutate_all(as.character)
-}
-numerize <- function(x) {
-  if (length(names(x)) > 43) {
-    x %>% mutate(
-         total_votes = as.numeric(total_votes),
-        missed_votes = as.numeric(missed_votes),
-       total_present = as.numeric(total_present),
-       next_election = as.numeric(next_election),
-    missed_votes_pct = as.numeric(missed_votes_pct),
-votes_with_party_pct = as.numeric(votes_with_party_pct))
-  } else {
-    x %>% mutate(total_votes = as.numeric(total_votes),
-                missed_votes = as.numeric(missed_votes),
-               total_present = as.numeric(total_present))
-  }
-}
-numerize_again <- function(x) {
-  if (length(names(x)) == 43) {
-    x %>% mutate(
-      missed_votes_pct = as.numeric(missed_votes_pct),
-  votes_with_party_pct = as.numeric(votes_with_party_pct))
-  } else { x }
-}
-# Little bit worried to have 'suppressWarnings()'------------------------------
-# Maaaaybe rewrite 'numerize()' so there's fewer warnings----------------------
-SenatorTibble <- suppressWarnings(lapply(SenatorTibble, numerize))
-SenatorTibble <- lapply(SenatorTibble, numerize_again)
-allSenators <- bind_rows(SenatorTibble, .id = "senate") %>% 
-  mutate(senate = as.integer(senate))
-dupeSenators <- allSenators %>% add_count(id) %>% filter(n > 1)
-# add_count is 'shorthand for group_by and add_tally'
+rm_null <- function(x) {
+  x[sapply(x, is.null)] <- NA
+  return(x) }
+
+allHouseURLs <- paste0(baseURL, c(98:116),"/house/members.json")
+allHouses <- lapply(allHouseURLs, grabChamber)
+HouseTibble <- lapply(allHouses, function(x) {x$results[[1]] %>% as_tibble} )
+RepsList <- lapply(1:19, function(house) { 
+  lapply(1:length(HouseTibble[[house]]$members), function(x) {
+    rm_null(HouseTibble[[house]]$members[[x]]) } ) %>% bind_rows() } )
+# This (I think) solves the problem of missing values for certain reps
+# 'bind_rows()' is flexible enough to able to add NAs to any missing column
+
+reps <- RepsList %>% bind_rows(.id = "house")
 
 
-graphSenators <- dupeSenators %>% filter(senate %in% 22:37)
+allsenateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
+allSenates <- lapply(allsenateURLs, grabChamber)
+SenateTibble <- lapply(allSenates, function(x) {x$results[[1]] %>% as_tibble} )
+SenatorsList <- lapply(1:37, function(senate) {
+  lapply(1:length(SenateTibble[[senate]]$members), function(x) {
+    rm_null(SenateTibble[[senate]]$members[[x]]) } ) %>% bind_rows() } )
 
-reducer <- function(x) {
-  x %>% select(id, last_name, gender, party, state, 
-    next_election, contains("_votes"), votes_with_party_pct)}
-senate_reducer <- function(x) {
-  x %>% select(id, senate, last_name, gender, party, state, 
-    next_election, contains("_votes"), votes_with_party_pct)}
-
-
-To-Do for Senate analysis
-# Learn s'more ggplot2 and show some meaningful formats/visualizations
-# Group missed votes by next_election
-# Learn %in% operator, 'group_by_at()' and similar
+senators <- SenatorsList %>% bind_rows(.id = "senate")

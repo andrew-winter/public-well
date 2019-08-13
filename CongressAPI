@@ -1,16 +1,18 @@
+# set up and signature functions
 library(tidyverse)
 library(httr)
 options(stringsAsFactors = FALSE)
 key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
 baseURL <- "https://api.propublica.org/congress/v1/"
-grabChamber <- function(x) {
+grabCongress <- function(x) {
   content(GET(x, add_headers(`X-API-Key` = key)), 'parsed')}
 rm_null <- function(x) {
   x[sapply(x, is.null)] <- NA
   return(x) }
 
+
 allHouseURLs <- paste0(baseURL, c(98:116),"/house/members.json")
-allHouses <- lapply(allHouseURLs, grabChamber)
+allHouses <- lapply(allHouseURLs, grabCongress)
 HouseTibble <- lapply(allHouses, function(x) {x$results[[1]] %>% as_tibble} )
 RepsList <- lapply(1:19, function(house) { 
   lapply(1:length(HouseTibble[[house]]$members), function(x) {
@@ -18,14 +20,73 @@ RepsList <- lapply(1:19, function(house) {
 # This (I think) solves the problem of missing values for certain reps
 # 'bind_rows()' is flexible enough to able to add NAs to any missing column
 
-reps <- RepsList %>% bind_rows(.id = "house")
+reps <- RepsList %>% bind_rows(.id = "congress") %>%
+  mutate(congress = as.numeric(congress) + 97)
 
 
 allsenateURLs <- paste0(baseURL,c(80:116),"/senate/members.json")
-allSenates <- lapply(allsenateURLs, grabChamber)
+allSenates <- lapply(allsenateURLs, grabCongress)
 SenateTibble <- lapply(allSenates, function(x) {x$results[[1]] %>% as_tibble} )
 SenatorsList <- lapply(1:37, function(senate) {
   lapply(1:length(SenateTibble[[senate]]$members), function(x) {
     rm_null(SenateTibble[[senate]]$members[[x]]) } ) %>% bind_rows() } )
 
-senators <- SenatorsList %>% bind_rows(.id = "senate")
+senators <- SenatorsList %>% bind_rows(.id = "congress") %>% 
+  mutate(congress = as.numeric(congress) + 79)
+
+
+# votes by type: missed, party, loneno, perfect; 102-116 House 80-116 Senate
+house_vote_url <- paste0(baseURL, c(102:116), "/house/votes/party.json")
+house_party_votes <- lapply(house_vote_url, grabCongress)
+HousePartyTibble <- lapply(1:15, function(x) {
+  house_party_votes[[x]]$results[[1]] %>% as_tibble } )
+HousePartyList <- lapply(1:15, function(house) {
+  lapply(1:length(HousePartyTibble[[house]]$members), function(x) {
+    HousePartyTibble[[house]]$members[[x]] } ) %>% bind_rows } )
+house_party <- bind_rows(HousePartyList, .id = "congress") %>%
+  mutate(congress = as.numeric(congress) + 101)
+
+senate_vote_url <- paste0(baseURL, c(80:116), "/senate/votes/party.json")
+senate_party_votes <- lapply(senate_vote_url, grabCongress)
+SenatePartyTibble <- lapply(1:37, function(x) {
+  senate_party_votes[[x]]$results[[1]] %>% as_tibble } )
+SenatePartyList <- lapply(22:37, function(senate) {
+  lapply(1:length(SenatePartyTibble[[senate]]$members), function(x) {
+    SenatePartyTibble[[senate]]$members[[x]] } ) %>% bind_rows } )
+senate_party <- bind_rows(SenatePartyList, .id = "congress") %>%
+  mutate(congress = as.numeric(congress) + 100)
+
+
+
+recent <- lapply(1:450, function(member) {
+  PartyTibble[[14]]$members[[member]] } ) %>% bind_rows
+
+a <- PartyTibble[[14]]$members[[1]]
+b <- PartyTibble[[14]]$members[[2]]
+bind_rows(a,b)
+
+
+
+grabExpenses <- function(x) {
+  content(GET(x, add_headers(`X-API-Key` = key)), 'parsed')}
+
+memberIDs <- filter(senators, senate == 37)$id %>% unique()
+category <- "total"
+
+allExpenseURLs <- paste0("https://api.propublica.org/congress/v1/members/", 
+  memberIDs, "/office_expenses/category/", category, ".json")
+allExpenses <- lapply(allExpenseURLs, grabExpenses)
+
+allExpenses
+names(allExpenses[[2]])
+
+sapply(1:7, function(x) { allExpenses[[2]][[x]] } )
+
+allExpenses[[2]]$results
+
+
+
+
+
+
+

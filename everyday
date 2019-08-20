@@ -1,0 +1,36 @@
+# Everyday set-up
+require("tidyverse")
+options(tibble.print_min = 15)
+options(tibble.print_max = 25)
+options(stringsAsFactors = FALSE)
+
+left <- function(text, numchars = nchar(text)){
+  result <- substr(text, 1, numchars)
+    return(result) }
+right <- function(text, numchars = nchar(text)){
+  result <- substr(text, nchar(text) - (numchars - 1), nchar(text))
+    return(result) }
+mid <- function(text, startnum = 1, numchars = nchar(text)){
+  result <- substr(text, startnum, (startnum + numchars - 1))
+    return(result) }
+
+
+C <- "C:/Users/I816544"
+createDir <- function(subdirs) {
+  lapply(seq_along(subdirs), function(y) {
+    dir.create(file.path(C, "Downloads", subdirs[[y]]))
+  } )
+}
+
+
+file.details <- function(pathh = "Documents/R/win-library") {
+  filenames <- file.path(C, pathh) %>% list.files()
+  fileinfo <- lapply(seq_along(filenames), function(x) {
+    file.path(C, pathh, filenames[[x]]) %>% file.info()
+  } ) %>%
+    bind_rows() %>% mutate(name = filenames) %>%
+    select(name, isdir, mtime, size, atime) %>%
+    arrange(desc(isdir), desc(atime), desc(size), name)
+return(fileinfo)
+}
+file.details("Downloads")

@@ -14,6 +14,11 @@ mid <- function(text, startnum = 1, numchars = nchar(text)){
   result <- substr(text, startnum, (startnum + numchars - 1))
     return(result) }
 
+time.taken <- function(x, ...) {
+  start_time <- Sys.time(); x; end_time <- Sys.time()
+return(list(x, end_time - start_time))
+}
+
 C <- "C:/Users/I816544"; Z <- "Z:/QTPLANMAINT/Rating"
 PM <- "Z:/QTPLANMAINT/Rating/CarrierData/2019/PM"
 file.details <- function(drive = C, pathh = "") {

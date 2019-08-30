@@ -41,23 +41,39 @@ createDir <- function(subdirs) {
 
 # notes-------------------
 AOW_rate <- 19
-before_tax <- function(rate) {rate * 80 }
-AOW_tax <- 289.07
-AOW_pretax_ded <- 92.43
-# pre-tax deductions could change by 60 in either direction next couple months :/
+before_tax_pay <- function(rate) {rate * 80 }
+taxes <- function(pay) { pay * 0.7487767 }
 
-AOW_rate
+# last pay period I paid $92.43 in pre tax deductions and $289.07 in taxes
+  # (that's where I got the 0.7487767 from)
 
-pretax_ded_est <- AOW_pretax_ded/before_tax(AOW_rate)
-tax_est <- AOW_tax/before_tax(AOW_rate)
-# estimated paycheck deduction rates for CRB based on AOW amounts
+AOW_net_pay <- AOW_rate %>% before_tax_pay() %>% taxes()
+AOW_net_pay
 
 CRB_rate <- c(12:24)
-CRB_range <- sapply(seq_along(CRB_rate), function(x){
-  CRB_rate[[x]] %>% before_tax } )
-# estimated range of before-tax income, ranging from min wage to x2 min wage
+CRB_net_pay <- CRB_rate %>% before_tax_pay() %>% taxes()
 
-CRB_after_tax <- CRB_range - (CRB_range*pretax_ded_est) - (CRB_range*tax_est)
-AOW_after_tax <- before_tax(AOW_rate) - AOW_pretax_ded - AOW_tax
+net_pay <- CRB_net_pay + AOW_net_pay
 
-(CRB_after_tax + AOW_after_tax) * 2 * 0.40
+net_pay_tbl <- cbind(AOW_net_pay, CRB_net_pay, net_pay) %>% as_tibble()
+
+rent_range <- seq(1250, 2200, by = 50)
+
+lapply(seq_along(rent_range), function(x) {
+  rent_range[[x]] / (net_pay_tbl * 2) } ) %>% bind_rows(.id = "rent") %>%
+    as_tibble() %>% mutate(rent = replace(rent, rent == "1", rent_range[[1]]))
+
+
+
+
+# key thinker: What's more important-- paying an equal percentage of individual
+  # income, or paying a certain percentage in total?  My initial thought is
+  # equal percentage.
+
+
+mid_range[2] # low, 13/19 = 0.6842
+mid_range[9] # equal 19/19 = 0.5
+
+mid_range[2] * 0.68
+mid_range[2] * 0.32
+mid_range[9] * 0.5

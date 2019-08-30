@@ -37,3 +37,27 @@ createDir <- function(subdirs) {
     dir.create(file.path(C, "Downloads", subdirs[[y]]))
   } )
 }
+
+
+# notes-------------------
+AOW_rate <- 19
+before_tax <- function(rate) {rate * 80 }
+AOW_tax <- 289.07
+AOW_pretax_ded <- 92.43
+# pre-tax deductions could change by 60 in either direction next couple months :/
+
+AOW_rate
+
+pretax_ded_est <- AOW_pretax_ded/before_tax(AOW_rate)
+tax_est <- AOW_tax/before_tax(AOW_rate)
+# estimated paycheck deduction rates for CRB based on AOW amounts
+
+CRB_rate <- c(12:24)
+CRB_range <- sapply(seq_along(CRB_rate), function(x){
+  CRB_rate[[x]] %>% before_tax } )
+# estimated range of before-tax income, ranging from min wage to x2 min wage
+
+CRB_after_tax <- CRB_range - (CRB_range*pretax_ded_est) - (CRB_range*tax_est)
+AOW_after_tax <- before_tax(AOW_rate) - AOW_pretax_ded - AOW_tax
+
+(CRB_after_tax + AOW_after_tax) * 2 * 0.40

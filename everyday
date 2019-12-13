@@ -3,7 +3,6 @@ require("tidyverse")
 options(tibble.print_min = 15)
 options(tibble.print_max = 25)
 options(stringsAsFactors = FALSE)
-
 left <- function(text, numchars = nchar(text)){
   result <- substr(text, 1, numchars)
     return(result) }
@@ -13,15 +12,22 @@ right <- function(text, numchars = nchar(text)){
 mid <- function(text, startnum = 1, numchars = nchar(text)){
   result <- substr(text, startnum, (startnum + numchars - 1))
     return(result) }
-
-time.taken <- function(x, ...) {
-  start_time <- Sys.time(); x; end_time <- Sys.time()
-return(list(x, end_time - start_time))
-}
+left_str <- function(textt, pat) {
+  result <- sapply(seq_along(textt), function(x) {
+    substr(textt[[x]], 1, str_locate(textt[[x]], pat)[,1] - 1) } )
+  return(result) }
+right_str <- function(textt, pat) {
+  result <- sapply(seq_along(textt), function(x) {
+    substr(textt[[x]], str_locate(textt[[x]], pat)[,1] + 1, nchar(textt[[x]])) } )
+  return(result) }
 
 C <- "C:/Users/I816544"; Z <- "Z:/QTPLANMAINT/Rating"
-PM <- "Z:/QTPLANMAINT/Rating/CarrierData/2019/PM"
-file.details <- function(drive = C, pathh = "") {
+createDir <- function(subdirs) {
+  lapply(seq_along(subdirs), function(y) {
+    dir.create(file.path(C, "Downloads", subdirs[[y]]))
+  } )
+}
+file.details <- function(drive = C, pathh = "Documents/R/win-library") {
   filenames <- file.path(drive, pathh) %>% list.files()
   fileinfo <- suppressWarnings(lapply(seq_along(filenames), function(x) {
     file.path(drive, pathh, filenames[[x]]) %>% file.info()
@@ -31,49 +37,19 @@ file.details <- function(drive = C, pathh = "") {
       arrange(desc(isdir), desc(mtime), desc(atime), desc(size), name))
 return(fileinfo)
 }
-
-createDir <- function(subdirs) {
-  lapply(seq_along(subdirs), function(y) {
-    dir.create(file.path(C, "Downloads", subdirs[[y]]))
-  } )
+time.taken <- function(x, ...) {
+  start_time <- Sys.time(); x; end_time <- Sys.time()
+return(list(x, end_time - start_time))
 }
+dayScriptswd <- function() {
+  setwd("C:/Users/I816544/Documents/R/win-library/dayScripts") }
+regularwd <- function() {
+  setwd("C:/Users/I816544/Documents/R/win-library") }
 
-
-# notes-------------------
-AOW_rate <- 19
-before_tax_pay <- function(rate) {rate * 80 }
-taxes <- function(pay) { pay * 0.7487767 }
-
-# last pay period I paid $92.43 in pre tax deductions and $289.07 in taxes
-  # (that's where I got the 0.7487767 from)
-
-AOW_net_pay <- AOW_rate %>% before_tax_pay() %>% taxes()
-AOW_net_pay
-
-CRB_rate <- c(12:24)
-CRB_net_pay <- CRB_rate %>% before_tax_pay() %>% taxes()
-
-net_pay <- CRB_net_pay + AOW_net_pay
-
-net_pay_tbl <- cbind(AOW_net_pay, CRB_net_pay, net_pay) %>% as_tibble()
-
-rent_range <- seq(1250, 2200, by = 50)
-
-lapply(seq_along(rent_range), function(x) {
-  rent_range[[x]] / (net_pay_tbl * 2) } ) %>% bind_rows(.id = "rent") %>%
-    as_tibble() %>% mutate(rent = replace(rent, rent == "1", rent_range[[1]]))
-
-
-
-
-# key thinker: What's more important-- paying an equal percentage of individual
-  # income, or paying a certain percentage in total?  My initial thought is
-  # equal percentage.
-
-
-mid_range[2] # low, 13/19 = 0.6842
-mid_range[9] # equal 19/19 = 0.5
-
-mid_range[2] * 0.68
-mid_range[2] * 0.32
-mid_range[9] * 0.5
+dayScriptswd()
+newDailyScript <- paste0(mid(date(), 5, 3), mid(date(), 9, 2),
+  right(date(), 2), ".R")
+file.edit(newDailyScript)
+regularwd()
+file.edit("pivotScript.R")
+withAutoprint(print("everyday_script.R read and sourced!"))

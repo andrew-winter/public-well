@@ -1,0 +1,304 @@
+# If I pass the sample Matthew gave as a request, with the proper headers, 
+  # result will be XML GetIfpQuote
+
+library(XML)
+doc <- xmlRoot(xmlTreeParse("grades.xml"))
+# xmlTreeParse() to "simply" read XML into an R tree "i.e. R-level XML node objects"
+# xmlRoot() gets the "top-level node"
+# xmlValue() gives just the text value within a node
+# so xmlSApply() can be used to apply xmlValue() to each child of the root node
+
+xmlSApply(doc[[1]], xmlValue)
+xmlSApply(doc, xmlValue)
+# so 'xmlSApply(doc, xmlValue)' will give just the 'top-level' text in the nodes
+
+xmlSApply(doc, function(x) xmlSApply(x, xmlValue) ) %>% t() %>% as_tibble()
+# apply a function through the XML
+  # function of x -- apply xmlValue through x
+
+info <- xmlTreeParse("customer_info.xml") %>% xmlRoot()
+xmlSApply(info, function(x) { xmlSApply(x, xmlValue) } ) %>% t() %>% as_tibble()
+test_app <- xmlTreeParse("test_app.xml") %>% xmlRoot()
+xmlSApply(test_app, function(x) { xmlSApply(x, xmlValue) } )
+
+output2 <- xmlTreeParse("output2.xml") %>% xmlRoot()
+quote_input <- xmlTreeParse("sample_quote_input.xml") %>% xmlRoot()
+quote_output <- xmlTreeParse("sample_quote_output.xml") %>% xmlRoot()
+
+input <- quote_input[[2]]
+xmlSApply(quote_output, function(x) { xmlSApply(x, xmlValue) } )
+
+
+
+
+# POST("httpbin.org/post", body = "A simple text string")
+# (appears that POST requests HAVE to have some kind of body)
+
+httpsample <- "http://httpbin.org/headers"
+quotit <- function(x, verb = GET, ...) {
+  verb(x, content_type(".xml")) }
+
+
+POST("httpbin.org/post", body = "A simple text stringgg", content_type(".xml"))
+# looks like it has content-length (maybe by default), and half of
+  # content-type ("application/xml" vs "text/xml ; charset="utf-8")
+  # still want connection: close and SoapAction
+
+soap <- POST("httpbin.org/post", add_headers(
+  SOAPAction = "http://www.quotit.com/Services/ActWS/ACA/2/IACA/GetIfpQuote"),
+  content_type(".xml")
+)
+content(soap)
+
+
+
+
+## NOTES START HERE
+# Attributes have to be quoted
+<note date="12/11/2007">
+  <to>Tove</to>
+  <from>Jani</from>
+</note> 
+
+# Data should be in elements, metadata should be in attributes
+# labelling elements with ID attributes can be very useful
+<messages>
+  <note id="501">
+    <to>Tove</to>
+    <from>Jani</from>
+    <heading>Reminder</heading>
+    <body>Don't forget me this weekend!</body>
+  </note>
+  <note id="502">
+    <to>Jani</to>
+    <from>Tove</from>
+    <heading>Re: Reminder</heading>
+    <body>I will not</body>
+  </note>
+</messages> 
+
+
+
+# Can use a name prefix to avoid name conflicts
+# Using a prefix requires a namespace for the prefix-- can use an xmlns attribute
+<h:table>
+  <h:td>Apples</h:td>
+</h:table>
+<f:table>
+  <f:name>Coffee Table</f:name>
+  <f:weight>Coffee Table</f:weight>
+</f:table>
+
+
+# xmlns:prefix="URI"
+
+<root xmlns:h="http://www.w3.org/TR/html4/"
+xmlns:f="https://www.w3schools.com/furniture">
+...
+<h:table>
+  <h:tr>
+...
+<f:table>
+  <f:name>African Coffee Table</f:name>
+
+
+
+
+# URI gives namespace a unique name, doesn't necessarily look up information
+# Can give default namespace for an element with 'xmlns="namespaceURI"'
+<table xmlns="http://www.w3.org/TR/html4/">
+  <tr>
+    <td>Apples</td>
+    <td>Bananas</td>
+  </tr>
+</table>
+
+
+
+# JavaScript syntax for using XMLHttpRequest
+var xhttp = new XMLHttpRequest();
+xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+       // Typical action to be performed when the document is ready:
+       document.getElementById("demo").innerHTML = xhttp.responseText;
+    }
+};
+xhttp.open("GET", "filename", true);
+xhttp.send();
+
+# first line creates an XMLHttpRequest object
+# second line specifies a function to be executed every time the status of XMLHttpRequest object changes
+# when readyState is 4 and status is 200, response is ready
+# responseText returns server response as a text string
+
+
+
+# XML DOM (Document Object Model) defines methods for accessing XML
+# modern browsers have built-in XML parsers that can convert text into an XML DOM object
+
+
+<p id="demo"></p>
+
+<script>
+var text, parser, xmlDoc;
+
+text = "<bookstore><book>" +
+"<title>Everyday Italian</title>" +
+"<author>Giada De Laurentiis</author>" +
+"<year>2005</year>" +
+"</book></bookstore>";
+
+parser = new DOMParser();
+xmlDoc = parser.parseFromString(text,"text/xml");
+
+document.getElementById("demo").innerHTML =
+xmlDoc.getElementsByTagName("title")[0].childNodes[0].nodeValue;
+</script>
+
+
+bookstore <- xmlRoot(xmlTreeParse("bookstore.xml"))
+bookstore[[1]][[1]] %>% xmlValue()
+
+
+# a text string is defined, XML DOM parser is created with 'parser = new DOMParser();'
+# parser creates a new XML DOM object that uses the text string
+  # xmlDoc = parser.parseFromString(text,"text/xml");
+# some code retrieves the text value of the first <title> element
+
+JavaScript example:	txt = xmlDoc.getElementsByTagName("title")[0].childNodes[0].nodeValue;
+R example:		bookstore[[1]][[1]] %>% xmlValue()
+
+# above code loads a text string into an XML DOM object, and extracts it with JavaScript
+# (I still don't really know what the DOM does)
+# XPath is also a thing-- nagivates through elements and attributes in an XML
+  # uses path expressions to select nodes or node-sets in an XML
+
+XPath example:		/bookstore/book[last()] 
+# Selects the last book element that is the child of the bookstore element
+
+# XSLT can transform XML into HTML
+  # (eXtensible Stylesheet Language Transformations) uses XPath to find information in an XML document
+# XQuery is to XML what SQL is to databases-- built on XPath expressions
+  # Could solve, for example, "Select all CD records with a price less than $10 from what's stored in cd_catalog.xml"
+# XLink creates hyperlinks in XML documents
+# XPointer allows links to point to specific parts of an XML document
+
+
+# XML document with correct syntax is "Well Formed"
+# must have: root element, all elements have closing tag, tags are case sensitive, elements are properly nested,
+  # and attribute values must be quoted
+# two kinds of document type definitions that can be used with XML: DTD and XML Schema
+  # validated against DTD means an XML doc is both "Well Formed" and "Valid"
+
+# End of the XML Tutorial, starting sub-tutorials now
+
+
+
+
+
+# SOAP message is a regular XML doc containing
+  # an envelope element that identifies XML as a SOAP message
+  # header element (contains header info)
+  # body element that contains call and response info
+  # fault element containing errors and status info
+
+
+# Skeleton SOAP
+<?xml version="1.0"?>
+<soap: Envelope
+xmlns:soap=http://www.w3.org/2003/05/soap-envelope/"
+soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
+<soap:Header>
+  <m:Trans xmlns:m="https://www.w3schools.com/transaction/"
+  soap:mustUnderstand="1">234
+  </m:Trans>
+</soap:Header>
+...
+...
+</soap:Envelope>
+
+
+# the SOAP Envelope element is the root element of a SOAP
+# according to w3, the xmlns:soap namespace should always be xmlns:soap="http://www.w3.org/2003/05/soap-envelope/", but
+  # in the string example Matthew sent over, looks like it's xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+
+# the encodingStyle attribute-- no default encoding
+  # soap:encodingStyle="URI" -- unsure if there's actually an encoding style attribute for the request I'm working on
+
+# SOAP Header element has to be the first child element of the Envelope element
+  # NOTE: all immediate child elements of the Header element must be namespace-qualified
+
+
+
+# To Do 11/14 (Rob's birthday btw)
+  # learn about HTTP protocol-- getting pretty close with the xml part, it's the actual HTTP that's going to be difficult
+    # Don't even think I'll have to use the XML package, think the request itself will be constructed with HTTP, and then
+    # just send the string Matthew sent over
+# HTTP communicates over TCP/IP  --- not sure at all what this means
+
+
+
+# HTTP requests consist of
+  # an HTTP method-- typically a verb like GET or POST
+  # "path of the resoure to fetch"; URL of resource stripped from obvious elements (e.g., http://, developer.mozilla.org)
+  # version of HTTP protocol
+  # headers
+  # a body, for some methods like POST
+# HTTP responses consist of
+  # version, status code, status message, headers, a body (optional)
+# most common API based on HTTP is XMLHttpRequest
+  # Fetch API also a thing
+
+
+# I know I need a POST request, and I have some understanding of headers I'll need
+  # content-type
+  # content-length
+  # connection: close
+  # [SoapAction: http://www.quotit.com/Services/ActWS/ACA/2/IACA/GetIfpQuote]
+
+
+# namespace identifier is "http://schemas.xmlsoap.org/soap/envelope/"
+# SOAP message is an XML doc with a 
+  # mandatory SOAP envelope
+    # element name is "Envelope"
+  # optional SOAP header
+    # element name is "Header"
+    # if present (not mandatory), must be the first immediate child element of Envelope
+  # mandatory SOAP body
+    # element name is "Body"
+    # MUST be immediate child element of a SOAP Envelope element, if there's no header
+
+# SOAP in HTTP does not mean SOAP overrides HTTP, but rather that the semantics of SOAP over HTTP maps naturally to HTTP
+  # That said, SOAP intermediaries are NOT the same as HTTP intermediaries
+    # an HTTP intermediary addressed with the HTTP Connection header field cannot be expected to inspect the SOAP body
+
+
+# HTTP must use "this" header field when issuing a SOAP HTTP Request
+soapaction    = "SOAPAction" ":" [ <"> URI-reference <"> ]
+URI-reference = <as defined in RFC 2396 [4]>
+
+# Matthew's Elixir version: [SoapAction: http://www.quotit.com/Services/ActWS/ACA/2/IACA/GetIfpQuote]
+
+# empty string SOAP header means the intent of the SOAP message is provided by the HTTP Request URI
+# no value means no indication of the intent of the message
+
+
+# Focus tomorrow, truly on content_type
+
+
+# 11/20
+j <- function() {
+  if (!exists("a")) {
+    a <- 1
+  } else {
+    a <- a + 1
+  }
+  a
+}
+j()
+
+# Calling j() returns the same value, 1, every time. Every time a function is called, a new environment is created to host execution
+  # each invocation of j() is independent (ways around this in mutable state)
+
+
+"One or more instructions within the initialization rectangle are followed by the evaluation of the condition on a variable which can assume values within a specified sequence.""Does v's current value belong to the sequence?"

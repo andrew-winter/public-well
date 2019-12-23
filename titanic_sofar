@@ -1,0 +1,25 @@
+# 12/23/2019
+# Check which periods IN is loaded with 'needsAuthorization'
+# Load the correct ones
+# Check in with Matthew/Anna/Ananthi
+
+train <- read.csv("train.csv") %>% as_tibble()
+train_names <- train %>% names()
+# want to see unique records of each column
+train[,2] %>% unique()
+train_uniques <- lapply(seq_along(train_names), function(x) {
+  train[,x] %>% unique() } )
+# Alright, instead of just uniques, what about counting along
+# At the moment, don't know how to loop through tallies of every column
+train[,3] %>% count(train_names[[3]])
+train[,3] %>% count("alskdjflaksjdf")
+  # Since I'm passing a string to 'tally()', it's just counting the total
+  # and labelling by whatever string I pass, even if it doesn't exist
+
+train %>% count(Pclass) %>% arrange(desc(n))
+train %>% count("Pclass")
+# Found something that kinda works!
+train[,3] %>% count(Pclass, sort = TRUE)
+train[,3] %>% count(eval(as.name(train_names[[3]])), sort = TRUE)
+lapply(seq_along(train_names), function(x) {
+  train[,x] %>% count(eval(as.name(train_names[[x]])), sort = TRUE) } )

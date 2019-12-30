@@ -6,4 +6,29 @@ Gbase_url <- "https://maps.googleapis.com/maps/api/distancematrix/"
 # Example request
 # https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626&key=YOUR_API_KEY
 samp <- paste0("https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615%2C-73.9976592&key=", Gkey)
-# Seems like there's a firewall reason I can't access this in R
+samp <- paste0("https://maps.googleapis.com/maps/api/distancematrix/json",
+               "?units=imperial&origins=", 
+               "40.6655101,-73.89188969999998&",
+               "destinations=",
+               "40.6905615,-73.9976592&key=", Gkey)
+trv <- "33.672492,-117.843762"
+bev <- "34.068995,-118.275864"
+
+practice_url <- paste0(Gbase_url, "json?units=imperial&origins=",
+                       trv, "&destinations=", bev, "&key=", Gkey)
+
+practice_url2 <- paste0(Gbase_url, "json?units=imperial&origins=",
+                        trv, "|40.6655101,-73.89188969999998",
+                        "&destinations=", bev, "|40.6905615,-73.9976592&key=",
+                        Gkey)
+# Appears to go first origin to first destination
+  # first origin to second destination
+  # Second origin to first destination, etc.
+# Irvine/Brooklyn to LA/Brooklyn
+fullerton_station <- "120 E Santa Fe Ave Fullerton CA+92832"
+practice_url3 <- paste0(Gbase_url, "json?units=imperial&origins=",
+                        trv, "&destinations=", 
+                        fullerton_station, 
+                        "&key=", Gkey)
+# Save a stations csv in the working directory
+stations <- read.csv("stations.csv") %>% as_tibble()

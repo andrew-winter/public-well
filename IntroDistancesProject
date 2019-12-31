@@ -31,3 +31,15 @@ practice_url3 <- paste0(Gbase_url, "json?units=imperial&origins=",
                         "&key=", Gkey)
 # Save a stations csv in the working directory
 stations <- read.csv("stations.csv") %>% as_tibble()
+
+
+stations <- read.csv("stations.csv") %>% as_tibble()
+apartments <- read.csv("apartments.csv") %>% as_tibble()
+destinations <- stations$full_address %>% str_replace_all(" ", "+")
+origins <- apartments$apt_address %>% str_replace_all(",", "") %>%
+  str_replace_all(" ", "+") %>% as.list()
+list_urls <- lapply(seq_along(origins), function(x) {
+  paste0("https://maps.googleapis.com/maps/api/distancematrix/",
+         "json?units=imperial&origins=", origins[[x]],
+         "&destinations=",destinations, "&key=", Gkey)
+} )

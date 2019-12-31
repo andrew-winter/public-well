@@ -1,5 +1,4 @@
 library(httr)
-Gkey <- "AIzaSyCSJym7604JxfGAthS4ZVOktl9MMAMyVBQ"
 Gbase_url <- "https://maps.googleapis.com/maps/api/distancematrix/"
 # outputFormat?parameters
 

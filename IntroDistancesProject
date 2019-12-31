@@ -43,3 +43,15 @@ list_urls <- lapply(seq_along(origins), function(x) {
          "json?units=imperial&origins=", origins[[x]],
          "&destinations=",destinations, "&key=", Gkey)
 } )
+# So this works... but it will be inefficient, I think
+  # I'm paying per call, so it'll make sense to group each apartment into
+  # one call with 29 different destinations-- let me make sure I can do that
+# See if there's a maximum number of destinations
+# Make some priorities for what I actually want
+
+many_destinations <- paste0("https://maps.googleapis.com/maps/api/",
+                            "distancematrix/json?units=imperial&origins=",
+                            origins[[15]], "&destinations=", 
+                            paste0(destinations, collapse = ""),
+                            "&key=", Gkey)
+many_destinations

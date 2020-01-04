@@ -15,7 +15,7 @@ list_urls <- lapply(seq_along(origins), function(x) {
 many_destinations <- paste0("https://maps.googleapis.com/maps/api/",
                             "distancematrix/json?units=imperial&origins=",
                             origins[[15]], "&destinations=", 
-                            paste0(destinations, collapse = ""),
+                            paste0(destinations, collapse = "|"),
                             "&key=", Gkey)
 many_destinations
 tidy_maps <- function(jo) {

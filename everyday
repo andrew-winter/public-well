@@ -37,6 +37,10 @@ file.details <- function(drive = C, pathh = "Documents/R/win-library") {
       arrange(desc(isdir), desc(mtime), desc(atime), desc(size), name))
 return(fileinfo)
 }
+idCheck <- function(lis) {
+  lapply(seq_along(lis), function(y) {
+    sapply(seq_along(lis), function(x) {
+      identical(lis[[y]], lis[[x]]) }) %>% which() }) }
 time.taken <- function(x, ...) {
   start_time <- Sys.time(); x; end_time <- Sys.time()
 return(list(x, end_time - start_time))

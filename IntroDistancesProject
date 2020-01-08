@@ -2,23 +2,15 @@ stations <- read.csv("stations.csv") %>% as_tibble()
 apartments <- read.csv("apartments.csv") %>% as_tibble()
 destinations <- stations$full_address %>% str_replace_all(" ", "+")
 origins <- apartments$apt_address %>% str_replace_all(",", "") %>%
-  str_replace_all(" ", "+") %>% as.list()
-list_urls <- lapply(seq_along(origins), function(x) {
-  paste0("https://maps.googleapis.com/maps/api/distancematrix/",
-         "json?units=imperial&origins=", origins[[x]],
-         "&destinations=",destinations, "&key=", Gkey)
+  str_replace_all(" ", "+") %>% str_replace_all("#", "")
+
+all_origins <- sapply(seq_along(origins), function(x) {
+  paste0("https://maps.googleapis.com/maps/api/",
+         "distancematrix/json?units=imperial&origins=",
+         origins[[x]], "&destinations=",
+  paste0(destinations, collapse = "|"), "&key=", Gkey)
 } )
-# So this works... but it will be inefficient, I think
-  # I'm paying per call, so it'll make sense to group each apartment into
-  # one call with 29 different destinations-- let me make sure I can do that
-# See if there's a maximum number of destinations
-many_destinations <- paste0("https://maps.googleapis.com/maps/api/",
-                            "distancematrix/json?units=imperial&origins=",
-                            origins[[15]], "&destinations=", 
-                            paste0(destinations, collapse = "|"),
-                            "&key=", Gkey)
-many_destinations
-tidy_maps <- function(jo) {
+tidyMaps <- function(jo) {
   # assumes that I've already used 'fromJSON()'
   cbind(jo$destination_addresses, jo$row$elements[[1]]) %>%
     mutate(jo$origin_addresses) %>% flatten() %>%
@@ -26,3 +18,8 @@ tidy_maps <- function(jo) {
            destination = `jo$destination_addresses`) %>%
     select(-status) %>% arrange(duration.value) %>% as_tibble()
 }
+
+all_navigations <- lapply(seq_along(all_origins), function(x) {
+  all_origins[[x]] %>% fromJSON() %>% tidyMaps() } )
+all_navigations %>% bind_rows() %>% arrange(duration.value) %>%
+  write.csv(file = "all_navigations.csv")

@@ -1,7 +1,7 @@
 # set up and signature functions
 library(httr)
 options(stringsAsFactors = FALSE)
-key <- "6NJCsRT0VQzHWYty16Lm1tIcxqmzX2vGya4FJj1p"
+key <- PROPUBLICA_KEY # remove key
 baseURL <- "https://api.propublica.org/congress/v1/"
 grabCongress <- function(x) {
   content(GET(x, add_headers(`X-API-Key` = key)), 'parsed')}

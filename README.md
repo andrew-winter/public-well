@@ -1,5 +1,5 @@
 # public-well
-Some R scripts I wrote when I first started learning to code-- aiming towards public wellness
+Very basic R scripts from when I first started coding-- public wellness 
 
 None of these were big projects. I was just trying to learn R by writing R code.
 
